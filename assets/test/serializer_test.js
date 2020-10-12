@@ -48,27 +48,12 @@ describe("binary", () => {
   })
 
   it("decodes push", done => {
-    let bin = "\0\x01\x01\x01\x0101te\x01"
+    let bin = "\0\x03\x03\n123topsome-event\x01\x01"
     let buffer = (new TextEncoder()).encode(bin).buffer
     let decoder = new TextDecoder()
     Serializer.decode(buffer, result => {
-      assert.equal(result.join_ref, "0")
-      assert.equal(result.ref, "1")
-      assert.equal(result.topic, "t")
-      assert.equal(result.event, "e")
-      assert.equal(result.payload.constructor, ArrayBuffer)
-      assert.equal(decoder.decode(result.payload), "\x01")
-      done()
-    })
-  })
-
-  it("decodes push with variable length segments", done => {
-    let bin = "\0\x03\x02\x03\n10012topsome-event\x01\x01"
-    let buffer = (new TextEncoder()).encode(bin).buffer
-    let decoder = new TextDecoder()
-    Serializer.decode(buffer, result => {
-      assert.equal(result.join_ref, "100")
-      assert.equal(result.ref, "12")
+      assert.equal(result.join_ref, "123")
+      assert.equal(result.ref, null)
       assert.equal(result.topic, "top")
       assert.equal(result.event, "some-event")
       assert.equal(result.payload.constructor, ArrayBuffer)

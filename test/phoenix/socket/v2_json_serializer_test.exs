@@ -7,7 +7,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
   @v2_reply_json "[null,null,\"t\",\"phx_reply\",{\"response\":\"m\",\"status\":null}]"
   @v2_msg_json "[null,null,\"t\",\"e\",\"m\"]"
 
-  @push <<
+  @client_push <<
     0::size(8), # push
     2, # join_ref_size
     3, # ref_size
@@ -98,13 +98,26 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
 
   describe "binary encode" do
     test "general pushed message" do
+      push =  <<
+        0::size(8), # push
+        2, # join_ref_size
+        5, # topic_size
+        5, # event_size
+        "12",
+        "topic",
+        "event",
+        101,
+        102,
+        103
+      >>
+
       assert encode!(@serializer, %Phoenix.Socket.Message{
               join_ref: "12",
-              ref: "123",
+              ref: nil,
               topic: "topic",
               event: "event",
               payload: {:binary, <<101, 102, 103>>}
-            }) == @push
+            }) == push
     end
 
     test "reply" do
@@ -128,7 +141,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
 
   describe "binary decode" do
     test "pushed message" do
-      assert decode!(@serializer, @push, opcode: :binary) == %Phoenix.Socket.Message{
+      assert decode!(@serializer, @client_push, opcode: :binary) == %Phoenix.Socket.Message{
               join_ref: "12",
               ref: "123",
               topic: "topic",

@@ -714,41 +714,58 @@ export let Serializer = {
     let view = new DataView(buffer)
     let kind = view.getUint8(0)
     let decoder = new TextDecoder()
-    if(kind === this.KINDS.push || kind === this.KINDS.reply){
-      let joinRefSize = view.getUint8(1)
-      let refSize = view.getUint8(2)
-      let topicSize = view.getUint8(3)
-      let eventSize = view.getUint8(4)
-      let offset = this.HEADER_LENGTH + this.META_LENGTH
-      let joinRef = decoder.decode(buffer.slice(offset, offset + joinRefSize))
-      offset = offset + joinRefSize
-      let ref = decoder.decode(buffer.slice(offset, offset + refSize))
-      offset = offset + refSize
-      let topic = decoder.decode(buffer.slice(offset, offset + topicSize))
-      offset = offset + topicSize
-      let event = decoder.decode(buffer.slice(offset, offset + eventSize))
-      offset = offset + eventSize
-      let data = buffer.slice(offset, buffer.byteLength)
-
-      if(kind === this.KINDS.push){
-        return {join_ref: joinRef, ref: ref, topic: topic, event: event, payload: data}
-      } else {
-        let payload = {status: event, response: data}
-        return {join_ref: joinRef, ref: ref, topic: topic, event: CHANNEL_EVENTS.reply, payload: payload}
-      }
-
-    } else if(kind === this.KINDS.broadcast){
-      let topicSize = view.getUint8(1)
-      let eventSize = view.getUint8(2)
-      let offset = this.HEADER_LENGTH + 2
-      let topic = decoder.decode(buffer.slice(offset, offset + topicSize))
-      offset = offset + topicSize
-      let event = decoder.decode(buffer.slice(offset, offset + eventSize))
-      offset = offset + eventSize
-      let data = buffer.slice(offset, buffer.byteLength)
-
-      return {join_ref: null, ref: null, topic: topic, event: event, payload: data}
+    switch(kind){
+      case this.KINDS.push:      return this.decodePush(buffer, view, decoder)
+      case this.KINDS.reply:     return this.decodeReply(buffer, view, decoder)
+      case this.KINDS.broadcast: return this.decodeBroadcast(buffer, view, decoder)
     }
+  },
+
+  decodePush(buffer, view, decoder){
+    let joinRefSize = view.getUint8(1)
+    let topicSize = view.getUint8(2)
+    let eventSize = view.getUint8(3)
+    let offset = this.HEADER_LENGTH + this.META_LENGTH - 1 // pushes have no ref
+    let joinRef = decoder.decode(buffer.slice(offset, offset + joinRefSize))
+    offset = offset + joinRefSize
+    let topic = decoder.decode(buffer.slice(offset, offset + topicSize))
+    offset = offset + topicSize
+    let event = decoder.decode(buffer.slice(offset, offset + eventSize))
+    offset = offset + eventSize
+    let data = buffer.slice(offset, buffer.byteLength)
+    return {join_ref: joinRef, ref: null, topic: topic, event: event, payload: data}
+  },
+
+  decodeReply(buffer, view, decoder){
+    let joinRefSize = view.getUint8(1)
+    let refSize = view.getUint8(2)
+    let topicSize = view.getUint8(3)
+    let eventSize = view.getUint8(4)
+    let offset = this.HEADER_LENGTH + this.META_LENGTH
+    let joinRef = decoder.decode(buffer.slice(offset, offset + joinRefSize))
+    offset = offset + joinRefSize
+    let ref = decoder.decode(buffer.slice(offset, offset + refSize))
+    offset = offset + refSize
+    let topic = decoder.decode(buffer.slice(offset, offset + topicSize))
+    offset = offset + topicSize
+    let event = decoder.decode(buffer.slice(offset, offset + eventSize))
+    offset = offset + eventSize
+    let data = buffer.slice(offset, buffer.byteLength)
+    let payload = {status: event, response: data}
+    return {join_ref: joinRef, ref: ref, topic: topic, event: CHANNEL_EVENTS.reply, payload: payload}
+  },
+
+  decodeBroadcast(buffer, view, decoder){
+    let topicSize = view.getUint8(1)
+    let eventSize = view.getUint8(2)
+    let offset = this.HEADER_LENGTH + 2
+    let topic = decoder.decode(buffer.slice(offset, offset + topicSize))
+    offset = offset + topicSize
+    let event = decoder.decode(buffer.slice(offset, offset + eventSize))
+    offset = offset + eventSize
+    let data = buffer.slice(offset, buffer.byteLength)
+
+    return {join_ref: null, ref: null, topic: topic, event: event, payload: data}
   }
 }
 
@@ -830,8 +847,8 @@ export class Socket {
     this.ref                  = 0
     this.timeout              = opts.timeout || DEFAULT_TIMEOUT
     this.transport            = opts.transport || global.WebSocket || LongPoll
-    this.defaultEncoder       = Serializer.encode
-    this.defaultDecoder       = Serializer.decode
+    this.defaultEncoder       = Serializer.encode.bind(Serializer)
+    this.defaultDecoder       = Serializer.decode.bind(Serializer)
     this.closeWasClean        = false
     this.unloaded             = false
     this.binaryType           = opts.binaryType || "arraybuffer"

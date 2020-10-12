@@ -553,7 +553,7 @@ defmodule Phoenix.Channel do
   """
   def push(socket, event, message) do
     %{transport_pid: transport_pid, topic: topic} = assert_joined!(socket)
-    Server.push(transport_pid, topic, event, message, socket.serializer)
+    Server.push(transport_pid, socket.join_ref, topic, event, message, socket.serializer)
   end
 
   @doc """

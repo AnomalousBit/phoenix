@@ -68,18 +68,15 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
   def encode!(%Message{payload: {:binary, data}} = msg) do
     join_ref_size = byte_size(msg.join_ref)
-    ref_size = byte_size(msg.ref)
     topic_size = byte_size(msg.topic)
     event_size = byte_size(msg.event)
 
     bin = <<
       @push::size(8),
       join_ref_size::size(8),
-      ref_size::size(8),
       topic_size::size(8),
       event_size::size(8),
       msg.join_ref::binary-size(join_ref_size),
-      msg.ref::binary-size(ref_size),
       msg.topic::binary-size(topic_size),
       msg.event::binary-size(event_size),
       data::binary
