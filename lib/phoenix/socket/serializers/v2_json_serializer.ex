@@ -10,8 +10,8 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
   @impl true
   def fastlane!(%Broadcast{payload: {:binary, data}} = msg) do
-    topic_size = byte_size(msg.topic)
-    event_size = byte_size(msg.event)
+    topic_size = byte_size!(msg.topic, :topic, 256)
+    event_size = byte_size!(msg.event, :event, 256)
 
     bin = <<
       @broadcast::size(8),
@@ -25,18 +25,22 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
     {:socket_push, :binary, bin}
   end
 
-  def fastlane!(%Broadcast{} = msg) do
+  def fastlane!(%Broadcast{payload: %{}} = msg) do
     data = Phoenix.json_library().encode_to_iodata!([nil, nil, msg.topic, msg.event, msg.payload])
     {:socket_push, :text, data}
+  end
+
+  def fastlane!(%Broadcast{payload: invalid}) do
+    raise ArgumentError, "expected broadcasted payload to be a map, got: #{inspect(invalid)}"
   end
 
   @impl true
   def encode!(%Reply{payload: {:binary, data}} = reply) do
     status = to_string(reply.status)
-    join_ref_size = byte_size(reply.join_ref)
-    ref_size = byte_size(reply.ref)
-    topic_size = byte_size(reply.topic)
-    status_size = byte_size(status)
+    join_ref_size = byte_size!(reply.join_ref, :join_ref, 256)
+    ref_size = byte_size!(reply.ref, :ref, 256)
+    topic_size = byte_size!(reply.topic, :topic, 256)
+    status_size = byte_size!(status, :status, 256)
 
     bin = <<
       @reply::size(8),
@@ -67,9 +71,9 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
   end
 
   def encode!(%Message{payload: {:binary, data}} = msg) do
-    join_ref_size = byte_size(msg.join_ref)
-    topic_size = byte_size(msg.topic)
-    event_size = byte_size(msg.event)
+    join_ref_size = byte_size!(msg.join_ref, :join_ref, 256)
+    topic_size = byte_size!(msg.topic, :topic, 256)
+    event_size = byte_size!(msg.event, :event, 256)
 
     bin = <<
       @push::size(8),
@@ -85,9 +89,13 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
     {:socket_push, :binary, bin}
   end
 
-  def encode!(%Message{} = msg) do
+  def encode!(%Message{payload: %{}} = msg) do
     data = [msg.join_ref, msg.ref, msg.topic, msg.event, msg.payload]
     {:socket_push, :text, Phoenix.json_library().encode_to_iodata!(data)}
+  end
+
+  def encode!(%Message{payload: invalid}) do
+    raise ArgumentError, "expected payload to be a map, got: #{inspect(invalid)}"
   end
 
   @impl true
@@ -129,5 +137,21 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
       ref: ref,
       join_ref: join_ref
     }
+  end
+
+  defp byte_size!(bin, kind, max) do
+    case byte_size(bin) do
+      size when size < max ->
+        size
+
+      oversized ->
+        raise ArgumentError, """
+        unable to convert #{kind} to binary.
+
+            #{inspect(bin)}
+
+        must be less than #{max} bytes, but is #{oversized} bytes.
+        """
+    end
   end
 end
