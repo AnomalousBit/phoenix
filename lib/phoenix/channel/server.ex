@@ -16,10 +16,9 @@ defmodule Phoenix.Channel.Server do
   """
   @spec join(Socket.t(), module, Message.t(), keyword) :: {:ok, term, pid} | {:error, term}
   def join(socket, channel, message, opts) do
-    %{topic: topic, payload: payload, ref: join_ref} = message
+    %{topic: topic, payload: payload, ref: ref, join_ref: join_ref} = message
     assigns = Map.merge(socket.assigns, Keyword.get(opts, :assigns, %{}))
-    socket = %{socket | topic: topic, channel: channel, join_ref: join_ref, assigns: assigns}
-
+    socket = %{socket | topic: topic, channel: channel, join_ref: join_ref || ref, assigns: assigns}
     ref = make_ref()
     from = {self(), ref}
     child_spec = channel.child_spec({socket.endpoint, from})
