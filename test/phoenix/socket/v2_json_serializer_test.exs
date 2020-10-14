@@ -152,7 +152,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
         encode!(@serializer, %Phoenix.Socket.Message{
           join_ref: "12",
           ref: nil,
-          topic: String.duplicate("t", 300),
+          topic: String.duplicate("t", 256),
           event: "event",
           payload: {:binary, <<101, 102, 103>>}
         })
@@ -163,14 +163,14 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
           join_ref: "12",
           ref: nil,
           topic: "topic",
-          event: String.duplicate("e", 300),
+          event: String.duplicate("e", 256),
           payload: {:binary, <<101, 102, 103>>}
         })
       end
 
       assert_raise ArgumentError, ~r/unable to convert join_ref to binary/, fn ->
         encode!(@serializer, %Phoenix.Socket.Message{
-          join_ref: String.duplicate("j", 300),
+          join_ref: String.duplicate("j", 256),
           ref: nil,
           topic: "topic",
           event: "event",
@@ -193,7 +193,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
       assert_raise ArgumentError, ~r/unable to convert ref to binary/, fn ->
         encode!(@serializer, %Phoenix.Socket.Reply{
           join_ref: "12",
-          ref: String.duplicate("r", 300),
+          ref: String.duplicate("r", 256),
           topic: "topic",
           status: :ok,
           payload: {:binary, <<101, 102, 103>>}
@@ -212,7 +212,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
     test "fastlane with oversized headers" do
       assert_raise ArgumentError, ~r/unable to convert topic to binary/, fn ->
         fastlane!(@serializer, %Phoenix.Socket.Broadcast{
-          topic: String.duplicate("t", 300),
+          topic: String.duplicate("t", 256),
           event: "event",
           payload: {:binary, <<101, 102, 103>>}
         })
@@ -221,7 +221,7 @@ defmodule Phoenix.Socket.V2.JSONSerializerTest do
       assert_raise ArgumentError, ~r/unable to convert event to binary/, fn ->
         fastlane!(@serializer, %Phoenix.Socket.Broadcast{
           topic: "topic",
-          event: String.duplicate("e", 300),
+          event: String.duplicate("e", 256),
           payload: {:binary, <<101, 102, 103>>}
         })
       end

@@ -10,8 +10,8 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
   @impl true
   def fastlane!(%Broadcast{payload: {:binary, data}} = msg) do
-    topic_size = byte_size!(msg.topic, :topic, 256)
-    event_size = byte_size!(msg.event, :event, 256)
+    topic_size = byte_size!(msg.topic, :topic, 255)
+    event_size = byte_size!(msg.event, :event, 255)
 
     bin = <<
       @broadcast::size(8),
@@ -37,10 +37,10 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
   @impl true
   def encode!(%Reply{payload: {:binary, data}} = reply) do
     status = to_string(reply.status)
-    join_ref_size = byte_size!(reply.join_ref, :join_ref, 256)
-    ref_size = byte_size!(reply.ref, :ref, 256)
-    topic_size = byte_size!(reply.topic, :topic, 256)
-    status_size = byte_size!(status, :status, 256)
+    join_ref_size = byte_size!(reply.join_ref, :join_ref, 255)
+    ref_size = byte_size!(reply.ref, :ref, 255)
+    topic_size = byte_size!(reply.topic, :topic, 255)
+    status_size = byte_size!(status, :status, 255)
 
     bin = <<
       @reply::size(8),
@@ -72,9 +72,9 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
   def encode!(%Message{payload: {:binary, data}} = msg) do
     join_ref = to_string(msg.join_ref)
-    join_ref_size = byte_size!(join_ref, :join_ref, 256)
-    topic_size = byte_size!(msg.topic, :topic, 256)
-    event_size = byte_size!(msg.event, :event, 256)
+    join_ref_size = byte_size!(join_ref, :join_ref, 255)
+    topic_size = byte_size!(msg.topic, :topic, 255)
+    event_size = byte_size!(msg.event, :event, 255)
 
     bin = <<
       @push::size(8),
@@ -142,7 +142,7 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
   defp byte_size!(bin, kind, max) do
     case byte_size(bin) do
-      size when size < max ->
+      size when size <= max ->
         size
 
       oversized ->
@@ -151,7 +151,7 @@ defmodule Phoenix.Socket.V2.JSONSerializer do
 
             #{inspect(bin)}
 
-        must be less than #{max} bytes, but is #{oversized} bytes.
+        must be less than or equal to #{max} bytes, but is #{oversized} bytes.
         """
     end
   end
