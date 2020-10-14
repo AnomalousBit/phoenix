@@ -51,6 +51,13 @@
  * Successful joins receive an "ok" status, while unsuccessful joins
  * receive "error".
  *
+ * With the default serializers and WebSocket transport, JSON text frames are
+ * used for pushing a JSON object literal. If an `ArrayBuffer` instance is provided,
+ * binary encoding will be used and the message will be sent with the binary
+ * opcode.
+ *
+ * *Note*: binary messages are only supported on the WebSocket transport.
+ *
  * ## Duplicate Join Subscriptions
  *
  * While the client may join any number of topics on any number of channels,
